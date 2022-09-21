@@ -1,6 +1,9 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
+import { Token } from 'src/interfaces/Token.interface';
+import { Tokens } from 'src/interfaces/Tokens.interface';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { SignInUserDto } from 'src/user/dto/signin-user.dto';
 import { AuthService } from './auth.service';
@@ -18,8 +21,8 @@ export class AuthController {
         },
     })
     @Post('signin')
-    signIn(@Body() userDto: SignInUserDto) {
-        return this.authService.signIn(userDto);
+    async signIn(@Body() userDto: SignInUserDto) {
+        return await this.authService.signIn(userDto);
     }
 
     @ApiOperation({ summary: 'Signing up/registration ' })
@@ -32,15 +35,21 @@ export class AuthController {
         },
     })
     @Post('signup')
-    signUp(@Body() userDto: CreateUserDto) {
-        return this.authService.signUp(userDto);
+    async signUp(@Body() userDto: CreateUserDto) {
+        const tokens = await this.authService.signUp(userDto);
+        return tokens;
     }
 
     @ApiOperation({ summary: 'Log out' })
     @Post('logout')
     logout() {}
 
-    @ApiOperation({ summary: 'Log out' })
-    @Get('refresh_token')
-    logout() {}
+    @ApiOperation({ summary: 'Get refresh token' })
+    @Post('refresh-token')
+    async refreshToken(@Req() request: Request) {
+        const cookies = request.cookies;
+        const refreshToken: Token = { token: cookies.refreshToken };
+        const tokens: Tokens = await this.authService.refresh(refreshToken);
+        return tokens;
+    }
 }

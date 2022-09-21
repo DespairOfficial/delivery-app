@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
+import { User } from 'src/interfaces/User.interface';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -16,7 +17,7 @@ export class JwtAuthGuard implements CanActivate {
             if (bearer !== 'Bearer' || !token) {
                 throw new UnauthorizedException({ message: 'User in not authorized' });
             }
-            const user = this.jwtService.verify(token);
+            const user: User = this.jwtService.verify(token);
             req.user = user;
             return true;
         } catch (error) {

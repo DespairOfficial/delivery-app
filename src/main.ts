@@ -2,9 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from './pipes/validation.pipe';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+    // parsing cookies from request.headers.cookie
+    // transforming it from string to Js object and exposing in request.cookies
+    // or request.signedCookies when secret is provided
+    app.use(cookieParser(process.env.COOKIES_SECRET));
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe());
     const swaggerConfig = new DocumentBuilder()

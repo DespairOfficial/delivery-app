@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
@@ -7,35 +12,56 @@ import { User } from 'src/interfaces/User.interface';
 import { SignInUserDto } from 'src/user/dto/signin-user.dto';
 import { Token } from 'src/interfaces/Token.interface';
 import { v4 as uuidv4 } from 'uuid';
+import { Tokens } from 'src/interfaces/Tokens.interface';
 
 @Injectable()
 export class AuthService {
     constructor(private userService: UserService, private jwtService: JwtService) {}
 
     private generateAccessToken(user: User): Token {
-        const payload = { uid: user.uid, email: user.email, nickname: user.nickname };
+        const payload = {
+            uid: user.uid,
+            email: user.email,
+            nickname: user.nickname,
+            type: 'access_token',
+        };
         return {
             token: this.jwtService.sign(payload),
         };
     }
 
-    private generateRefreshToken() {
+    private generateRefreshToken(user: User): Token {
         const payload = {
             id: uuidv4(),
+            uid: user.uid,
+            email: user.email,
+            nickname: user.nickname,
             type: 'refresh_token',
         };
         return {
-            id: payload.id,
             token: this.jwtService.sign(payload, {
-                secret: process.env.SECRET || 'refresh_token_secret_8a1lma@#$!ds_15',
+                secret: process.env.JWT_REFRESH_SECRET || 'refresh_token_secret_8a1lma@#$!ds_15',
                 expiresIn: '3d',
             }),
         };
     }
-    private setNewRefreshToken(user_uid: string, refresh_token: string) {}
+    private async saveRefreshToken(uid: string, refreshToken: Token) {
+        return await this.userService.setNewRefreshToken(uid, refreshToken);
+    }
+
+    private async generateTokens(user: User): Promise<Tokens> {
+        const accessToken: Token = this.generateAccessToken(user);
+        const candidateToRefreshToken: Token = this.generateRefreshToken(user);
+        const refreshToken: Token = await this.saveRefreshToken(user.uid, candidateToRefreshToken);
+        return {
+            accessToken,
+            refreshToken,
+        };
+    }
+
     private async validateUser(userDto: SignInUserDto): Promise<User> {
         try {
-            const user = await this.userService.getUserByEmail(userDto.email);
+            const user = await this.userService.findByEmail(userDto.email);
             if (user) {
                 const passwordPassed = await bcrypt.compare(userDto.password, user.password);
                 if (passwordPassed) {
@@ -49,13 +75,28 @@ export class AuthService {
             throw error;
         }
     }
-    async signIn(userDto: SignInUserDto): Promise<Token> {
-        const user: User = await this.validateUser(userDto);
-        return this.generateAccessToken(user);
-    }
-    async signUp(userDto: CreateUserDto): Promise<Token> {
+    private validateRefreshToken(refreshToken: Token): Promise<User> {
         try {
-            const candidate: User = await this.userService.getUserByEmail(userDto.email);
+            if (!refreshToken.token) {
+                throw new UnauthorizedException('Unvalid refresh token');
+            }
+
+            const user = this.jwtService.verify(refreshToken.token, {
+                secret: process.env.JWT_REFRESH_SECRET,
+            });
+            return user;
+        } catch (error) {
+            throw error;
+        }
+    }
+    async signIn(userDto: SignInUserDto): Promise<Tokens> {
+        const user: User = await this.validateUser(userDto);
+        const tokens = await this.generateTokens(user);
+        return tokens;
+    }
+    async signUp(userDto: CreateUserDto): Promise<Tokens> {
+        try {
+            const candidate: User = await this.userService.findByEmail(userDto.email);
             if (candidate) {
                 throw new BadRequestException('User with this email already exists');
             }
@@ -64,10 +105,24 @@ export class AuthService {
                 ...userDto,
                 password: hashedPassword,
             });
-            return this.generateAccessToken(user);
+            const tokens = await this.generateTokens(user);
+            return tokens;
         } catch (error) {
-            throw error;
+            throw new InternalServerErrorException();
         }
     }
     async logout() {}
+    async refresh(refreshToken: Token): Promise<Tokens> {
+        if (!refreshToken.token) {
+            throw new UnauthorizedException('User is not authorized');
+        }
+        const userDataFromToken = await this.validateRefreshToken(refreshToken);
+        const userDataFromDb = await this.userService.findByRefreshToken(refreshToken);
+        if (!userDataFromToken || !userDataFromDb) {
+            throw new UnauthorizedException('User is not authorized');
+        }
+        const user = await this.userService.findById(userDataFromToken.uid);
+        const tokens = await this.generateTokens(user);
+        return tokens;
+    }
 }

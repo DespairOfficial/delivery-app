@@ -1,20 +1,28 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from '../interfaces/User.interface';
-import { Pool } from 'pg';
-import { PG_CONNECTION } from 'src/constants';
 import { UserRepository } from './user.repository';
+import { Token } from 'src/interfaces/Token.interface';
 
 @Injectable()
 export class UserService {
     constructor(private userRepository: UserRepository) {}
 
-    async getUserByEmail(email: string): Promise<User> {
+    async findById(uid: string): Promise<User> {
         try {
-            return this.userRepository.getByEmail(email);
+            return this.userRepository.findById(uid);
         } catch (error) {
             console.log(error);
+            throw new InternalServerErrorException(error);
+        }
+    }
+
+    async findByEmail(email: string): Promise<User> {
+        try {
+            return this.userRepository.findByEmail(email);
+        } catch (error) {
+            console.log(error);
+            throw new InternalServerErrorException(error);
         }
     }
     async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -22,6 +30,7 @@ export class UserService {
             return this.userRepository.create(createUserDto);
         } catch (error) {
             console.log(error);
+            throw new InternalServerErrorException(error);
         }
     }
     async getCurrentUserInfo(email: string) {
@@ -29,6 +38,23 @@ export class UserService {
             return this.userRepository.getUserInfo(email);
         } catch (error) {
             console.log(error);
+            throw new InternalServerErrorException(error);
+        }
+    }
+    async setNewRefreshToken(uid: string, new_token: Token) {
+        try {
+            const newToken = await this.userRepository.setRefreshToken(uid, new_token);
+            return newToken;
+        } catch (error) {
+            throw new InternalServerErrorException(error);
+        }
+    }
+    async findByRefreshToken(refreshToken: Token): Promise<User> {
+        try {
+            return this.userRepository.getByRefreshToken(refreshToken);
+        } catch (error) {
+            console.log(error);
+            throw new InternalServerErrorException(error);
         }
     }
 }

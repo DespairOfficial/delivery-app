@@ -24,4 +24,8 @@ export class TagRepository implements IRepository<Tag> {
         const result = await this.db.query(`SELECT * FROM public.tag WHERE "name" = '${name}'`);
         return result.rows[0];
     }
+    async findById(id: string | number): Promise<Tag> {
+        const result = await this.db.query(`SELECT * FROM public.tag WHERE "id" = '${id}'`);
+        return result.rows[0];
+    }
 }
