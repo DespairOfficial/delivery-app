@@ -1,0 +1,1 @@
+ALTER TABLE public.user ADD refresh_token varchar(255);
