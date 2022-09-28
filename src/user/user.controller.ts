@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -26,8 +26,14 @@ export class UserController {
         status: 200,
         type: User,
     })
-    @Post()
+    @Put()
     createUser(@Body() createUserDto: CreateUserDto) {
         return this.userService.createUser(createUserDto);
+    }
+    @Delete()
+    deleteUser(@Req() request: Request) {
+        const result = this.userService.deleteUser(request.user.uid);
+        delete request.user;
+        return result;
     }
 }

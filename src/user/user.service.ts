@@ -57,4 +57,11 @@ export class UserService {
             throw new InternalServerErrorException(error);
         }
     }
+    async deleteUser(uid: string) {
+        try {
+            return this.userRepository.deleteById(uid);
+        } catch (error) {
+            throw new InternalServerErrorException(error);
+        }
+    }
 }

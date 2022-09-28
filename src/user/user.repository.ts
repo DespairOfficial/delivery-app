@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { PG_CONNECTION } from 'src/constants';
 import { Token } from 'src/interfaces/Token.interface';
 import { User } from 'src/interfaces/User.interface';
+import { UserInfo } from 'src/interfaces/UserInfo.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
@@ -21,14 +22,19 @@ export class UserRepository implements IRepository<User> {
         throw new Error('Method not implemented.');
     }
     async deleteById(id: string | number): Promise<void> {
-        throw new Error('Method not implemented.');
+        const res = await this.db.query(`DELETE * FROM public.user where uid=${id}`);
+        return res.rows[0];
     }
-    async getUserInfo(email: string): Promise<User> {
-        const res = await this.db.query(
+    async getUserInfo(email: string) {
+        const userInfoQuery = await this.db.query(
             `SELECT email,nickname FROM public.user WHERE "email" ='${email}' `,
         );
-        const userInfo: User = res.rows[0];
-        return userInfo;
+        const tagInfoQuery = await this.db.query(
+            `SELECT public.tag.id, public.tag.name, public.tag.sort_order FROM public.user JOIN public.tag on public.user.uid = public.tag.creator WHERE "email" ='${email}'`,
+        );
+
+        const info: UserInfo = { ...userInfoQuery.rows[0], tags: tagInfoQuery.rows };
+        return info;
     }
     async findByEmail(email: string) {
         const result = await this.db.query(`SELECT * FROM public.user WHERE "email" ='${email}' `);

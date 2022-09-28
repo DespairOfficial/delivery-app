@@ -7,8 +7,8 @@ import { Tokens } from 'src/interfaces/Tokens.interface';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { SignInUserDto } from 'src/user/dto/signin-user.dto';
 import { AuthService } from './auth.service';
-const TOKEN_EXAMPLE =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IiJ9.eyJzdWIiOiIiLCJuYW1lIjoiIiwiaWF0IjoxMjAzMjN9.13hSdKXX8nSdbb7MnPjbIVMxp3r2jzNEaMs0r06pJsY';
+import { TOKEN_OBJECT_EXAMPLE } from '../constants';
+
 @ApiTags('Authentication')
 @Controller()
 export class AuthController {
@@ -17,7 +17,7 @@ export class AuthController {
     @ApiResponse({
         status: 200,
         schema: {
-            example: TOKEN_EXAMPLE,
+            example: TOKEN_OBJECT_EXAMPLE,
         },
     })
     @Post('signin')
@@ -29,9 +29,7 @@ export class AuthController {
     @ApiResponse({
         status: 200,
         schema: {
-            example: {
-                token: TOKEN_EXAMPLE,
-            },
+            example: TOKEN_OBJECT_EXAMPLE,
         },
     })
     @Post('signup')
