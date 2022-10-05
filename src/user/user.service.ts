@@ -30,9 +30,9 @@ export class UserService {
             throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
         }
     }
-    async getCurrentUserInfo(email: string) {
+    async getCurrentUserInfo(uid: string) {
         try {
-            return await this.userRepository.getUserInfo(email);
+            return await this.userRepository.getUserInfo(uid);
         } catch (error) {
             throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
         }
@@ -62,6 +62,13 @@ export class UserService {
     async logout(uid: string) {
         try {
             return await this.userRepository.deleteRefreshToken(uid);
+        } catch (error) {
+            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
+        }
+    }
+    async getAddedTags(uid: string) {
+        try {
+            return { tags: await this.userRepository.getAddedTags(uid) };
         } catch (error) {
             throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
         }

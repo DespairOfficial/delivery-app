@@ -6,6 +6,7 @@ import { User } from 'src/interfaces/User.interface';
 import { UserInfo } from 'src/interfaces/UserInfo.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { accessTokenOptions, refreshTokenOptions } from '../config/jwtOptions';
+import { Tag } from 'src/interfaces/Tag.interface';
 
 @Injectable()
 export class UserRepository implements IRepository<User> {
@@ -26,15 +27,18 @@ export class UserRepository implements IRepository<User> {
         const res = await this.db.query(`DELETE * FROM public.user where uid=${id}`);
         return res.rows[0];
     }
-    async getUserInfo(email: string) {
+    async getAddedTags(uid: string): Promise<Array<Omit<Tag, 'creator'>>> {
+        const tagsInfo = await this.db.query(
+            `SELECT public.tag.id, public.tag.name, public.tag.sort_order FROM  public.user_tag JOIN  public.tag on public.user_tag.tag_id = public.tag.id WHERE public.user_tag.user_id = '${uid}'`,
+        );
+        return tagsInfo.rows;
+    }
+    async getUserInfo(uid: string): Promise<UserInfo> {
         const userInfoQuery = await this.db.query(
-            `SELECT email,nickname FROM public.user WHERE "email" ='${email}' `,
+            `SELECT email,nickname FROM public.user WHERE "uid" ='${uid}' `,
         );
-        const tagInfoQuery = await this.db.query(
-            `SELECT public.tag.id, public.tag.name, public.tag.sort_order FROM public.user JOIN public.tag on public.user.uid = public.tag.creator WHERE "email" ='${email}'`,
-        );
-
-        const info: UserInfo = { ...userInfoQuery.rows[0], tags: tagInfoQuery.rows };
+        const tagInfoQuery = await this.getAddedTags(uid);
+        const info: UserInfo = { ...userInfoQuery.rows[0], tags: tagInfoQuery };
         return info;
     }
     async findByEmail(email: string) {

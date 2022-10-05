@@ -113,21 +113,17 @@ export class AuthService {
         }
     }
     async signUp(userDto: CreateUserDto): Promise<Tokens> {
-        try {
-            const candidate: User = await this.userService.findByEmail(userDto.email);
-            if (candidate) {
-                throw new BadRequestException('User with this email already exists');
-            }
-            const hashedPassword = await bcrypt.hash(userDto.password, 7);
-            const user: User = await this.userService.createUser({
-                ...userDto,
-                password: hashedPassword,
-            });
-            const tokens = await this.generateTokens(user);
-            return tokens;
-        } catch (error) {
-            throw new InternalServerErrorException(BAD_AUTH);
+        const candidate: User = await this.userService.findByEmail(userDto.email);
+        if (candidate) {
+            throw new BadRequestException('User with this email already exists');
         }
+        const hashedPassword = await bcrypt.hash(userDto.password, 7);
+        const user: User = await this.userService.createUser({
+            ...userDto,
+            password: hashedPassword,
+        });
+        const tokens = await this.generateTokens(user);
+        return tokens;
     }
     async logout(uid: string) {
         try {
@@ -137,20 +133,16 @@ export class AuthService {
         }
     }
     async refresh(refreshToken: Token): Promise<Tokens> {
-        try {
-            if (!refreshToken.token) {
-                throw new UnauthorizedException('User is not authorized');
-            }
-            const userDataFromToken = await this.validateRefreshToken(refreshToken);
-            const userDataFromDb = await this.userService.findByRefreshToken(refreshToken);
-            if (!userDataFromToken || !userDataFromDb) {
-                throw new UnauthorizedException('User is not authorized');
-            }
-            const user = await this.userService.findById(userDataFromToken.uid);
-            const tokens = await this.generateTokens(user);
-            return tokens;
-        } catch (error) {
-            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
+        if (!refreshToken.token) {
+            throw new UnauthorizedException('User is not authorized');
         }
+        const userDataFromToken = await this.validateRefreshToken(refreshToken);
+        const userDataFromDb = await this.userService.findByRefreshToken(refreshToken);
+        if (!userDataFromToken || !userDataFromDb) {
+            throw new UnauthorizedException('User is not authorized');
+        }
+        const user = await this.userService.findById(userDataFromToken.uid);
+        const tokens = await this.generateTokens(user);
+        return tokens;
     }
 }

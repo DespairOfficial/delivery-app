@@ -10,30 +10,34 @@ import { AddTagsDto } from 'src/user/dto/add-tags.dto';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { FindTagParams } from './dto/find-tags-query-params.dto';
 import { TagRepository } from './tag.repository';
-import { UNKOWN_INTERNAL_ERROR, TAGNAME_EXISTS, NO_RIGHTS, WRONG_ARGUMENTS } from '../constants';
+import {
+    UNKOWN_INTERNAL_ERROR,
+    TAGNAME_EXISTS,
+    NO_RIGHTS,
+    WRONG_ARGUMENTS,
+    ITEM_DELETED,
+    ARGUMENT_ADDED,
+} from '../constants';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class TagService {
-    constructor(private tagRepository: TagRepository) {}
+    constructor(private tagRepository: TagRepository, private userService: UserService) {}
 
     async createTag(createTagDto: CreateTagDto, creator: string): Promise<Omit<Tag, 'creator'>> {
-        try {
-            const candidateTag = await this.tagRepository.getByName(createTagDto.name);
+        const candidateTag = await this.tagRepository.getByName(createTagDto.name);
 
-            if (candidateTag) {
-                throw new BadRequestException(TAGNAME_EXISTS);
-            }
-
-            return this.tagRepository.create({
-                creator,
-                name: createTagDto.name,
-                sort_order: createTagDto.sort_order,
-            });
-        } catch (error) {
-            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
+        if (candidateTag) {
+            throw new BadRequestException(TAGNAME_EXISTS);
         }
+
+        return this.tagRepository.create({
+            creator,
+            name: createTagDto.name,
+            sort_order: createTagDto.sort_order,
+        });
     }
-    async getTagInfoById(id: string) {
+    async getTagInfoById(id: string): Promise<TagInfo> {
         try {
             return this.tagRepository.findInfoById(id);
         } catch (error) {
@@ -49,20 +53,17 @@ export class TagService {
         }
     }
     async changeTag(id: string, createTagDto: CreateTagDto, creator: string): Promise<TagInfo> {
-        try {
-            const tagToChange: Tag = await this.tagRepository.findById(id);
-            if (tagToChange.creator === creator) {
-                if (await this.tagRepository.getByName(createTagDto.name)) {
-                    throw new BadRequestException(TAGNAME_EXISTS);
-                }
-                const updatedTag: Tag = await this.tagRepository.update({ id, ...createTagDto });
-                const tagInfo = await this.tagRepository.findInfoById(id);
-                return tagInfo;
+        const tagToChange: Tag = await this.tagRepository.findById(id);
+        console.log(tagToChange.creator, creator);
+        if (tagToChange.creator === creator) {
+            if (await this.tagRepository.getByName(createTagDto.name)) {
+                throw new BadRequestException(TAGNAME_EXISTS);
             }
-            throw new ForbiddenException(NO_RIGHTS);
-        } catch (error) {
-            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
+            await this.tagRepository.update({ id, ...createTagDto });
+            const tagInfo = await this.tagRepository.findInfoById(id);
+            return tagInfo;
         }
+        throw new ForbiddenException(NO_RIGHTS);
     }
     async getUserTags(uid: string) {
         try {
@@ -72,12 +73,32 @@ export class TagService {
             throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
         }
     }
-    async addTagsById(uid: string, addTagsDto: AddTagsDto) {
+    async addTagsByIds(uid: string, addTagsDto: AddTagsDto) {
+        const tagsResult: Omit<Tag, 'creator'>[] = await (
+            await this.userService.getAddedTags(uid)
+        ).tags;
+        tagsResult.map((item) => {
+            if (addTagsDto.tags.includes(item.id)) {
+                throw new BadRequestException(ARGUMENT_ADDED);
+            }
+        });
         try {
-            const result = await this.tagRepository.addManyToUser(uid, addTagsDto);
-            return result;
+            await this.tagRepository.addTagsToUser(uid, addTagsDto);
         } catch (error) {
             throw new BadRequestException(WRONG_ARGUMENTS);
         }
+        return await this.userService.getAddedTags(uid);
+    }
+    async removeAddedTagById(uid: string, id: string) {
+        const isAdded = await this.tagRepository.isTagAdded(uid, id);
+        if (!isAdded) {
+            throw new BadRequestException(ITEM_DELETED);
+        }
+        const result = await this.tagRepository.removeTagFromUser(uid, id);
+
+        if (result == 1) {
+            return await this.userService.getAddedTags(uid);
+        }
+        throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
     }
 }

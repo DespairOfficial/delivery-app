@@ -15,7 +15,7 @@ export class AuthController {
     constructor(private authService: AuthService) {}
     @ApiOperation({ summary: 'Sign in/Log in' })
     @ApiResponse({
-        status: 200,
+        status: 201,
         schema: {
             example: TOKEN_OBJECT_EXAMPLE,
         },
@@ -25,9 +25,9 @@ export class AuthController {
         return await this.authService.signIn(userDto);
     }
 
-    @ApiOperation({ summary: 'Signing up/registration ' })
+    @ApiOperation({ summary: 'Sign Up/Registration ' })
     @ApiResponse({
-        status: 200,
+        status: 201,
         schema: {
             example: TOKEN_OBJECT_EXAMPLE,
         },
@@ -39,6 +39,9 @@ export class AuthController {
     }
 
     @ApiOperation({ summary: 'Log out' })
+    @ApiResponse({
+        status: 201,
+    })
     @Post('logout')
     @UseGuards(JwtAuthGuard)
     async logout(@Req() request: Request) {

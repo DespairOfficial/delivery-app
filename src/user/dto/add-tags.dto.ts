@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEmail, IsString, Length } from 'class-validator';
+import { IsArray } from 'class-validator';
 
 export class AddTagsDto {
     @ApiProperty({
-        example: '[1,2,3]',
+        example: '[1, 2, 3]',
         description: 'Tags, user want to add',
     })
     @IsArray({ message: 'Must be array of numbers' })

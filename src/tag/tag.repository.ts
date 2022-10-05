@@ -7,6 +7,7 @@ import { User } from 'src/interfaces/User.interface';
 import { AddTagsDto } from 'src/user/dto/add-tags.dto';
 import { CreateTagQueryDto } from './dto/create-tag-query.dto';
 import { FindTagParams } from './dto/find-tags-query-params.dto';
+import { FindTagsResultDto } from './dto/find-tags-result.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 @Injectable()
 export class TagRepository implements IRepository<Tag> {
@@ -62,7 +63,7 @@ export class TagRepository implements IRepository<Tag> {
             sort_order: tag.sort_order,
         };
     }
-    async findWithParams(params: FindTagParams) {
+    async findWithParams(params: FindTagParams): Promise<FindTagsResultDto> {
         let queryParams = '';
         const keys = Object.keys(params);
         if (keys.includes('sortByOrder') || keys.includes('sortByName')) {
@@ -104,13 +105,24 @@ export class TagRepository implements IRepository<Tag> {
         };
         return { data: data, meta: meta };
     }
-    async addManyToUser(uid: string, addTagsDto: AddTagsDto) {
+    async addTagsToUser(uid: string, addTagsDto: AddTagsDto) {
         const tuples = addTagsDto.tags.map((item) => {
             return `('${uid}' , '${item}')`;
         });
         const values = tuples.join(', ');
         const addQuery = `BEGIN; INSERT INTO public.user_tag (user_id, tag_id) VALUES ${values}; COMMIT;`;
         const result = await this.db.query(addQuery);
-        return result.rows;
+        return result;
+    }
+    async isTagAdded(uid: string, id: string) {
+        const result = await this.db.query(
+            `SELECT * FROM public.user_tag WHERE user_id = '${uid}' AND tag_id = '${id}'`,
+        );
+        return result.rowCount;
+    }
+    async removeTagFromUser(uid: string, id: string) {
+        const query = `DELETE FROM public.user_tag WHERE user_id = '${uid}' AND tag_id = '${id}'`;
+        const result = await this.db.query(query);
+        return result.rowCount;
     }
 }
