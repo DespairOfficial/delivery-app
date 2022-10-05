@@ -3,13 +3,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from 'src/user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-
+import { accessTokenOptions } from '../config/jwtOptions';
 @Module({
     imports: [
         forwardRef(() => UserModule),
         JwtModule.register({
             secret: process.env.JWT_ACCESS_SECRET || 'DesperateSecretKey',
-            signOptions: { expiresIn: '30m' },
+            signOptions: { expiresIn: accessTokenOptions.expiresIn },
         }),
     ],
     controllers: [AuthController],

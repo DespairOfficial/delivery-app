@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS public.user_tag
     CONSTRAINT fk_tag_id FOREIGN KEY (tag_id)
         REFERENCES public.tag (id) MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
+        ON DELETE CASCADE,
     CONSTRAINT fk_user_id FOREIGN KEY (user_id)
         REFERENCES public."user" (uid) MATCH SIMPLE
         ON UPDATE NO ACTION

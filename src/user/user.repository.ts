@@ -5,6 +5,7 @@ import { Token } from 'src/interfaces/Token.interface';
 import { User } from 'src/interfaces/User.interface';
 import { UserInfo } from 'src/interfaces/UserInfo.interface';
 import { CreateUserDto } from './dto/create-user.dto';
+import { accessTokenOptions, refreshTokenOptions } from '../config/jwtOptions';
 
 @Injectable()
 export class UserRepository implements IRepository<User> {
@@ -58,13 +59,18 @@ export class UserRepository implements IRepository<User> {
             `SELECT refresh_token FROM public.user  WHERE "uid" ='${uid}'`,
         );
         const token: string = result.rows[0];
-        return { token };
+        return { token: token, expiresIn: accessTokenOptions.expiresIn };
     }
     async setRefreshToken(uid: string, token: Token): Promise<Token> {
         const result = await this.db.query(
             `UPDATE public.user SET refresh_token = '${token.token}' WHERE "uid" ='${uid}' RETURNING refresh_token`,
         );
         const newToken = result.rows[0].refresh_token;
-        return { token: newToken };
+        return { token: newToken, expiresIn: refreshTokenOptions.expiresIn };
+    }
+    async deleteRefreshToken(uid: string) {
+        const query = `UPDATE public.user SET "refresh_token" = NULL WHERE uid ='${uid}'`;
+        const result = await this.db.query(query);
+        return result;
     }
 }

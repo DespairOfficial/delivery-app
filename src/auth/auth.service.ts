@@ -13,7 +13,8 @@ import { SignInUserDto } from 'src/user/dto/signin-user.dto';
 import { Token } from 'src/interfaces/Token.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { Tokens } from 'src/interfaces/Tokens.interface';
-
+import { BAD_AUTH, BAD_REQUEST, ERROR_SAVING_TOKEN, UNKOWN_INTERNAL_ERROR } from 'src/constants';
+import { accessTokenOptions, refreshTokenOptions } from '../config/jwtOptions.js';
 @Injectable()
 export class AuthService {
     constructor(private userService: UserService, private jwtService: JwtService) {}
@@ -27,6 +28,7 @@ export class AuthService {
         };
         return {
             token: this.jwtService.sign(payload),
+            expiresIn: accessTokenOptions.expiresIn,
         };
     }
 
@@ -41,22 +43,34 @@ export class AuthService {
         return {
             token: this.jwtService.sign(payload, {
                 secret: process.env.JWT_REFRESH_SECRET || 'refresh_token_secret_8a1lma@#$!ds_15',
-                expiresIn: '3d',
+                expiresIn: refreshTokenOptions.expiresIn,
             }),
+            expiresIn: refreshTokenOptions.expiresIn,
         };
     }
     private async saveRefreshToken(uid: string, refreshToken: Token) {
-        return await this.userService.setNewRefreshToken(uid, refreshToken);
+        try {
+            return await this.userService.setNewRefreshToken(uid, refreshToken);
+        } catch (error) {
+            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
+        }
     }
 
     private async generateTokens(user: User): Promise<Tokens> {
         const accessToken: Token = this.generateAccessToken(user);
         const candidateToRefreshToken: Token = this.generateRefreshToken(user);
-        const refreshToken: Token = await this.saveRefreshToken(user.uid, candidateToRefreshToken);
-        return {
-            accessToken,
-            refreshToken,
-        };
+        try {
+            const refreshToken: Token = await this.saveRefreshToken(
+                user.uid,
+                candidateToRefreshToken,
+            );
+            return {
+                accessToken,
+                refreshToken,
+            };
+        } catch (error) {
+            throw new InternalServerErrorException(ERROR_SAVING_TOKEN);
+        }
     }
 
     private async validateUser(userDto: SignInUserDto): Promise<User> {
@@ -72,7 +86,7 @@ export class AuthService {
                 message: 'Wrong email or password',
             });
         } catch (error) {
-            throw error;
+            throw new BadRequestException(BAD_REQUEST);
         }
     }
     private validateRefreshToken(refreshToken: Token): Promise<User> {
@@ -86,13 +100,17 @@ export class AuthService {
             });
             return user;
         } catch (error) {
-            throw error;
+            throw new UnauthorizedException('Unvalid refresh token');
         }
     }
     async signIn(userDto: SignInUserDto): Promise<Tokens> {
-        const user: User = await this.validateUser(userDto);
-        const tokens = await this.generateTokens(user);
-        return tokens;
+        try {
+            const user: User = await this.validateUser(userDto);
+            const tokens = await this.generateTokens(user);
+            return tokens;
+        } catch (error) {
+            throw new BadRequestException(BAD_AUTH);
+        }
     }
     async signUp(userDto: CreateUserDto): Promise<Tokens> {
         try {
@@ -108,21 +126,31 @@ export class AuthService {
             const tokens = await this.generateTokens(user);
             return tokens;
         } catch (error) {
-            throw new InternalServerErrorException();
+            throw new InternalServerErrorException(BAD_AUTH);
         }
     }
-    async logout() {}
+    async logout(uid: string) {
+        try {
+            await this.userService.logout(uid);
+        } catch (error) {
+            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
+        }
+    }
     async refresh(refreshToken: Token): Promise<Tokens> {
-        if (!refreshToken.token) {
-            throw new UnauthorizedException('User is not authorized');
+        try {
+            if (!refreshToken.token) {
+                throw new UnauthorizedException('User is not authorized');
+            }
+            const userDataFromToken = await this.validateRefreshToken(refreshToken);
+            const userDataFromDb = await this.userService.findByRefreshToken(refreshToken);
+            if (!userDataFromToken || !userDataFromDb) {
+                throw new UnauthorizedException('User is not authorized');
+            }
+            const user = await this.userService.findById(userDataFromToken.uid);
+            const tokens = await this.generateTokens(user);
+            return tokens;
+        } catch (error) {
+            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
         }
-        const userDataFromToken = await this.validateRefreshToken(refreshToken);
-        const userDataFromDb = await this.userService.findByRefreshToken(refreshToken);
-        if (!userDataFromToken || !userDataFromDb) {
-            throw new UnauthorizedException('User is not authorized');
-        }
-        const user = await this.userService.findById(userDataFromToken.uid);
-        const tokens = await this.generateTokens(user);
-        return tokens;
     }
 }

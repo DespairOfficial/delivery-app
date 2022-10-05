@@ -1,5 +1,4 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
-
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Token } from 'src/interfaces/Token.interface';
@@ -8,7 +7,8 @@ import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { SignInUserDto } from 'src/user/dto/signin-user.dto';
 import { AuthService } from './auth.service';
 import { TOKEN_OBJECT_EXAMPLE } from '../constants';
-
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { refreshTokenOptions } from '../config/jwtOptions.js';
 @ApiTags('Authentication')
 @Controller()
 export class AuthController {
@@ -40,13 +40,21 @@ export class AuthController {
 
     @ApiOperation({ summary: 'Log out' })
     @Post('logout')
-    logout() {}
+    @UseGuards(JwtAuthGuard)
+    async logout(@Req() request: Request) {
+        const result = await this.authService.logout(request.user.uid);
+        request.user = undefined;
+        return result;
+    }
 
     @ApiOperation({ summary: 'Get refresh token' })
     @Post('refresh-token')
     async refreshToken(@Req() request: Request) {
         const cookies = request.cookies;
-        const refreshToken: Token = { token: cookies.refreshToken };
+        const refreshToken: Token = {
+            token: cookies.refreshToken,
+            expiresIn: refreshTokenOptions.expiresIn,
+        };
         const tokens: Tokens = await this.authService.refresh(refreshToken);
         return tokens;
     }
