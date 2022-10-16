@@ -1,16 +1,10 @@
 import { Module } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PG_CONNECTION } from '../constants';
-
+import pgConfig from '../config/database'
 const dbProvider = {
     provide: PG_CONNECTION,
-    useValue: new Pool({
-        user: 'postgres',
-        host: 'localhost',
-        database: 'crud_user_tags',
-        password: '2718',
-        port: 5432,
-    }),
+    useValue: new Pool(pgConfig.dev),
 };
 
 @Module({

@@ -5,15 +5,15 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { UserService } from 'src/user/user.service';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcryptjs';
-import { User } from 'src/interfaces/User.interface';
-import { SignInUserDto } from 'src/user/dto/signin-user.dto';
-import { Token } from 'src/interfaces/Token.interface';
+import { User } from '../interfaces/User.interface';
+import { SignInUserDto } from '../user/dto/signin-user.dto';
+import { Token } from '../interfaces/Token.interface';
 import { v4 as uuidv4 } from 'uuid';
-import { Tokens } from 'src/interfaces/Tokens.interface';
-import { BAD_AUTH, BAD_REQUEST, ERROR_SAVING_TOKEN, UNKOWN_INTERNAL_ERROR } from 'src/constants';
+import { Tokens } from '../interfaces/Tokens.interface';
+import { BAD_AUTH, BAD_REQUEST, ERROR_SAVING_TOKEN, UNKOWN_INTERNAL_ERROR } from '../constants';
 import { accessTokenOptions, refreshTokenOptions } from '../config/jwtOptions.js';
 @Injectable()
 export class AuthService {
@@ -92,7 +92,7 @@ export class AuthService {
     private validateRefreshToken(refreshToken: Token): Promise<User> {
         try {
             if (!refreshToken.token) {
-                throw new UnauthorizedException('Unvalid refresh token');
+                throw new UnauthorizedException('Invalid refresh token');
             }
 
             const user = this.jwtService.verify(refreshToken.token, {
@@ -100,7 +100,7 @@ export class AuthService {
             });
             return user;
         } catch (error) {
-            throw new UnauthorizedException('Unvalid refresh token');
+            throw new UnauthorizedException('Invalid refresh token');
         }
     }
     async signIn(userDto: SignInUserDto): Promise<Tokens> {

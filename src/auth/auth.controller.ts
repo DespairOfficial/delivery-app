@@ -1,10 +1,10 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { Token } from 'src/interfaces/Token.interface';
-import { Tokens } from 'src/interfaces/Tokens.interface';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { SignInUserDto } from 'src/user/dto/signin-user.dto';
+import { Token } from '../interfaces/Token.interface';
+import { Tokens } from '../interfaces/Tokens.interface';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { SignInUserDto } from '../user/dto/signin-user.dto';
 import { AuthService } from './auth.service';
 import { TOKEN_OBJECT_EXAMPLE } from '../constants';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -58,6 +58,7 @@ export class AuthController {
             token: cookies.refreshToken,
             expiresIn: refreshTokenOptions.expiresIn,
         };
+		console.log(refreshToken)
         const tokens: Tokens = await this.authService.refresh(refreshToken);
         return tokens;
     }

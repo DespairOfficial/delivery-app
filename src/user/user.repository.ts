@@ -1,16 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Pool } from 'pg';
-import { PG_CONNECTION } from 'src/constants';
-import { Token } from 'src/interfaces/Token.interface';
-import { User } from 'src/interfaces/User.interface';
-import { UserInfo } from 'src/interfaces/UserInfo.interface';
+import { PG_CONNECTION } from '../constants';
+import { Token } from '../interfaces/Token.interface';
+import { User } from '../interfaces/User.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { accessTokenOptions, refreshTokenOptions } from '../config/jwtOptions';
-import { Tag } from 'src/interfaces/Tag.interface';
 
 @Injectable()
 export class UserRepository implements IRepository<User> {
     constructor(@Inject(PG_CONNECTION) private db: Pool) {}
+	async find(): Promise<User[]> {
+		const query = await this.db.query(`SELECT * FROM public.user`)
+		const result: User[] = query.rows
+		return result
+	}
 
     async create(createUserDto: CreateUserDto): Promise<User> {
         const result = await this.db.query(
@@ -26,20 +29,6 @@ export class UserRepository implements IRepository<User> {
     async deleteById(id: string | number): Promise<void> {
         const res = await this.db.query(`DELETE * FROM public.user where uid=${id}`);
         return res.rows[0];
-    }
-    async getAddedTags(uid: string): Promise<Array<Omit<Tag, 'creator'>>> {
-        const tagsInfo = await this.db.query(
-            `SELECT public.tag.id, public.tag.name, public.tag.sort_order FROM  public.user_tag JOIN  public.tag on public.user_tag.tag_id = public.tag.id WHERE public.user_tag.user_id = '${uid}'`,
-        );
-        return tagsInfo.rows;
-    }
-    async getUserInfo(uid: string): Promise<UserInfo> {
-        const userInfoQuery = await this.db.query(
-            `SELECT email,nickname FROM public.user WHERE "uid" ='${uid}' `,
-        );
-        const tagInfoQuery = await this.getAddedTags(uid);
-        const info: UserInfo = { ...userInfoQuery.rows[0], tags: tagInfoQuery };
-        return info;
     }
     async findByEmail(email: string) {
         const result = await this.db.query(`SELECT * FROM public.user WHERE "email" ='${email}' `);

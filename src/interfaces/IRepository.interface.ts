@@ -3,4 +3,5 @@ interface IRepository<T> {
     update(item: Object): Promise<T>;
     deleteById(id: string | number): void;
     findById(id: string | number): Promise<T>;
+    find(): Promise<T[]>;
 }

@@ -3,8 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { DbModule } from './db/db.module';
-import { TagModule } from './tag/tag.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { FeaturedModule } from './featured/featured.module';
+import { RestaurantModule } from './restaurant/restaurant.module';
 
 @Module({
     imports: [
@@ -13,7 +14,8 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
         UserModule,
         AuthModule,
         DbModule,
-        TagModule,
+        FeaturedModule,
+        RestaurantModule,
     ],
     controllers: [],
     providers: [{ provide: APP_INTERCEPTOR, useClass: CacheInterceptor }],

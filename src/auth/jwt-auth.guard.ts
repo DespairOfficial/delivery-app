@@ -2,9 +2,8 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
-import { accessTokenOptions } from 'src/config/jwtOptions';
-import { NOT_AUTHORIZED, NOT_AUTHORIZED_OR_BAD_TOKEN } from 'src/constants';
-import { User } from 'src/interfaces/User.interface';
+import { NOT_AUTHORIZED, NOT_AUTHORIZED_OR_BAD_TOKEN } from '../constants';
+import { User } from '../interfaces/User.interface';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {

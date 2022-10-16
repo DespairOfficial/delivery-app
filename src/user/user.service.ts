@@ -2,8 +2,8 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from '../interfaces/User.interface';
 import { UserRepository } from './user.repository';
-import { Token } from 'src/interfaces/Token.interface';
-import { UNKOWN_INTERNAL_ERROR } from 'src/constants';
+import { Token } from '../interfaces/Token.interface';
+import { UNKOWN_INTERNAL_ERROR } from '../constants';
 @Injectable()
 export class UserService {
     constructor(private userRepository: UserRepository) {}
@@ -26,13 +26,6 @@ export class UserService {
     async createUser(createUserDto: CreateUserDto): Promise<User> {
         try {
             return await this.userRepository.create(createUserDto);
-        } catch (error) {
-            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
-        }
-    }
-    async getCurrentUserInfo(uid: string) {
-        try {
-            return await this.userRepository.getUserInfo(uid);
         } catch (error) {
             throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
         }
@@ -66,11 +59,5 @@ export class UserService {
             throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
         }
     }
-    async getAddedTags(uid: string) {
-        try {
-            return { tags: await this.userRepository.getAddedTags(uid) };
-        } catch (error) {
-            throw new InternalServerErrorException(UNKOWN_INTERNAL_ERROR);
-        }
-    }
+
 }
