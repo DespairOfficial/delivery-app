@@ -6,6 +6,9 @@ import { DbModule } from './db/db.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { FeaturedModule } from './featured/featured.module';
 import { RestaurantModule } from './restaurant/restaurant.module';
+import { CategoryModule } from './category/category.module';
+import { StaticModule } from './static/static.module';
+import { DishModule } from './dish/dish.module';
 
 @Module({
     imports: [
@@ -16,6 +19,9 @@ import { RestaurantModule } from './restaurant/restaurant.module';
         DbModule,
         FeaturedModule,
         RestaurantModule,
+        CategoryModule,
+        StaticModule,
+        DishModule,
     ],
     controllers: [],
     providers: [{ provide: APP_INTERCEPTOR, useClass: CacheInterceptor }],

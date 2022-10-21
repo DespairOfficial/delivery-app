@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class Featured {
     /**
-     * User's unique id
+     * Featured's unique id
      */
     @ApiProperty({
         example: '1',

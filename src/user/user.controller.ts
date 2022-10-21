@@ -28,7 +28,4 @@ export class UserController {
         delete request.user;
         return result;
     }
-
-
-
 }
