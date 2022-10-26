@@ -8,7 +8,7 @@ export class Category {
         example: '1',
         description: 'Id of category',
     })
-    readonly id: string;
+    readonly id: number;
 
     /**
      * Title of featured

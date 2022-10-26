@@ -8,7 +8,7 @@ export class Featured {
         example: '1',
         description: 'Id of featured',
     })
-    readonly id: string;
+    readonly id: number;
 
     /**
      * Title of featured

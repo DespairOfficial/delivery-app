@@ -8,7 +8,7 @@ export class Dish {
         example: '1',
         description: 'Id of dish',
     })
-    readonly id: string;
+    readonly id: number;
 
     /**
      * Title of a dish
